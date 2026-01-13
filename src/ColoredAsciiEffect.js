@@ -13,6 +13,7 @@ class ColoredAsciiEffect {
     // Animation state
     let animationProgress = 0
     let isAnimating = false
+    let animationPhase = 'fadeIn' // 'fadeIn', 'fadeOut', or 'idle'
     let animationStartTime = 0
     const animationDuration = 2500 // ms
     
@@ -56,16 +57,45 @@ class ColoredAsciiEffect {
       renderAscii()
     }
     
-    this.startAnimation = function() {
-      isAnimating = true
-      animationStartTime = performance.now()
-      animationProgress = 0
-      particlesInitialized = false
-      particles = []
+    this.startAnimation = function(phase = 'fadeIn') {
+      animationPhase = phase
+      if (phase === 'fadeIn' || phase === 'fadeOut') {
+        isAnimating = true
+        animationStartTime = performance.now()
+        animationProgress = 0
+        if (phase === 'fadeIn') {
+          particlesInitialized = false
+          particles = []
+        } else if (phase === 'fadeOut') {
+          // For fadeOut, we need to reinitialize particles from current image
+          // This ensures smooth transition from show phase
+          particlesInitialized = false
+        }
+      } else if (phase === 'show') {
+        // Show phase: no animation, just display the model
+        isAnimating = false
+        animationProgress = 1
+      }
     }
     
     this.isAnimationComplete = function() {
-      return animationProgress >= 1
+      // For fadeIn/fadeOut, check if progress >= 1
+      // For show phase, it's never "complete" - it's controlled by duration in main.js
+      if (animationPhase === 'fadeIn' || animationPhase === 'fadeOut') {
+        return animationProgress >= 1
+      }
+      return false
+    }
+    
+    this.getAnimationPhase = function() {
+      return animationPhase
+    }
+    
+    this.setAnimationPhase = function(phase) {
+      animationPhase = phase
+      if (phase === 'show') {
+        isAnimating = false
+      }
     }
 
     this.domElement = domElement
@@ -202,6 +232,9 @@ class ColoredAsciiEffect {
       if (isAnimating && animationProgress < 1) {
         const elapsed = performance.now() - animationStartTime
         animationProgress = Math.min(elapsed / animationDuration, 1)
+      } else if (isAnimating && animationProgress >= 1) {
+        // Animation complete - will be handled by main loop
+        animationProgress = 1
       }
       
       // Clear canvas
@@ -212,34 +245,67 @@ class ColoredAsciiEffect {
       asciiCtx.font = `${fontSize}px "Courier New", monospace`
       asciiCtx.textBaseline = 'top'
 
-      // If animating, use particle system
-      if (isAnimating && animationProgress < 1) {
-        // Initialize particles on first frame of animation
-        if (!particlesInitialized) {
+      // If animating (fadeIn or fadeOut), use particle system
+      if (isAnimating) {
+        // Initialize particles on first frame of fadeIn animation
+        if (animationPhase === 'fadeIn' && !particlesInitialized) {
           initializeParticles(oImgData)
         }
         
-        // Render particles
-        for (const p of particles) {
-          // Calculate individual particle progress with delay
-          const particleProgress = Math.max(0, Math.min(1, 
-            (animationProgress - p.delay) / (1 - p.delay)
-          ))
-          
-          const easedProgress = easeInOutCubic(particleProgress)
-          
-          // Interpolate position
-          const x = p.startX + (p.finalX - p.startX) * easedProgress
-          const y = p.startY + (p.finalY - p.startY) * easedProgress
-          
-          // Fade in as it approaches final position
-          const alpha = Math.min(1, particleProgress * 2)
-          
-          asciiCtx.fillStyle = p.color.replace('rgb', 'rgba').replace(')', `,${alpha})`)
-          asciiCtx.fillText(p.char, x, y)
+        // For fadeOut, reinitialize particles from current image for smooth transition
+        // This is important when transitioning from show phase where model may have rotated
+        if (animationPhase === 'fadeOut' && !particlesInitialized) {
+          initializeParticles(oImgData)
         }
-      } else {
-        // Normal rendering (no animation)
+        
+        // Render particles if they're initialized
+        if (particlesInitialized && particles.length > 0) {
+          for (const p of particles) {
+            let particleProgress, alpha
+            
+            if (animationPhase === 'fadeIn') {
+              // Fade in: particles move from scattered to final positions
+              particleProgress = Math.max(0, Math.min(1, 
+                (animationProgress - p.delay) / (1 - p.delay)
+              ))
+              
+              const easedProgress = easeInOutCubic(particleProgress)
+              
+              // Interpolate position from start to final
+              const x = p.startX + (p.finalX - p.startX) * easedProgress
+              const y = p.startY + (p.finalY - p.startY) * easedProgress
+              
+              // Fade in as it approaches final position
+              alpha = Math.min(1, particleProgress * 2)
+              
+              asciiCtx.fillStyle = p.color.replace('rgb', 'rgba').replace(')', `,${alpha})`)
+              asciiCtx.fillText(p.char, x, y)
+            } else if (animationPhase === 'fadeOut') {
+              // Fade out: particles move from final positions back to scattered (inverted)
+              // Use same delay as fadeIn so particles closer to center fade out first (inverse of fadeIn)
+              particleProgress = Math.max(0, Math.min(1, 
+                (animationProgress - p.delay) / (1 - p.delay)
+              ))
+              
+              const easedProgress = easeInOutCubic(particleProgress)
+              
+              // Interpolate position from final back to start (inverted)
+              const x = p.finalX + (p.startX - p.finalX) * easedProgress
+              const y = p.finalY + (p.startY - p.finalY) * easedProgress
+              
+              // Fade out as it moves away (inverted alpha)
+              alpha = Math.max(0, 1 - particleProgress * 2)
+              
+              asciiCtx.fillStyle = p.color.replace('rgb', 'rgba').replace(')', `,${alpha})`)
+              asciiCtx.fillText(p.char, x, y)
+            }
+          }
+        }
+        // If particles aren't ready yet, fall through to normal rendering for smooth transition
+      }
+      
+      // Normal rendering (show phase or particles not ready)
+      if (!isAnimating || !particlesInitialized || particles.length === 0) {
         const maxIdx = aCharList.length - 1
         
         for (let y = 0; y < iHeight; y++) {

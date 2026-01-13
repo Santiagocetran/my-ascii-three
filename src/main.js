@@ -55,7 +55,6 @@ document.body.appendChild(effect.domElement)
 // 6. LOAD 3D MODEL
 let model = null
 let modelGroup = null
-let canSpin = false
 const loader = new STLLoader()
 
 loader.load('/sai-prueba-pagina.stl', (geometry) => {
@@ -93,19 +92,37 @@ loader.load('/sai-prueba-pagina.stl', (geometry) => {
   scene.add(modelGroup)
   
   // Start the scatter-to-form animation
-  effect.startAnimation()
-  
-  // Start spinning after animation completes (2.5s animation + small buffer)
-  setTimeout(() => {
-    canSpin = true
-  }, 2700)
+  effect.startAnimation('fadeIn')
 })
 
 // 7. ANIMATION LOOP
 let time = 0
+let showPhaseStartTime = 0
+const animationDuration = 2500 // ms - must match ColoredAsciiEffect
+const showPhaseDuration = 5000 // ms - how long to show the model rotating (increased for better viewing)
+
 function animate() {
-  // Showcase animation after assembly completes
-  if (modelGroup && canSpin) {
+  // Handle ASCII animation loop (fade in -> show -> fade out -> repeat)
+  const currentPhase = effect.getAnimationPhase()
+  const now = performance.now()
+  
+  if (currentPhase === 'fadeIn' && effect.isAnimationComplete()) {
+    // Fade in complete, start show phase with rotation
+    effect.startAnimation('show')
+    showPhaseStartTime = now
+  } else if (currentPhase === 'show') {
+    // Check if show phase duration has elapsed
+    if (now - showPhaseStartTime >= showPhaseDuration) {
+      // Show phase complete, start fade out
+      effect.startAnimation('fadeOut')
+    }
+  } else if (currentPhase === 'fadeOut' && effect.isAnimationComplete()) {
+    // Fade out complete, restart fade in
+    effect.startAnimation('fadeIn')
+  }
+  
+  // Rotate model only during show phase
+  if (modelGroup && currentPhase === 'show') {
     time += 0.015
     
     // Continuous Y rotation to show all sides
