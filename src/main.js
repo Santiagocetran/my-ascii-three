@@ -41,9 +41,11 @@ rimLight.position.set(0, 2, -5)
 scene.add(rimLight)
 
 // 5. ASCII EFFECT with depth colors
-// Character set ordered by visual density (light to heavy)
-const effect = new ColoredAsciiEffect(renderer, ' .\':,;clodxkO0KXNWM@', {
+// Extended character set ordered by visual density (light to heavy) for better quality
+// More characters = more brightness levels = better detail
+const effect = new ColoredAsciiEffect(renderer, ' .\'`^",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$', {
   invert: true,
+  resolution: 0.2, // Increased from 0.15 for better detail
   colors: ['#0d5164', '#4a8a9c', '#c0c2ca', '#e8e8e8', '#ffffff'] // blue -> teal -> grey -> light -> white
 })
 effect.setSize(window.innerWidth, window.innerHeight)
