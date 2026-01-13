@@ -1,14 +1,11 @@
 /**
- * Colored ASCII Effect - Maps brightness to depth colors
- * With scatter-to-form animation support
- * Based on Three.js AsciiEffect
+ * Colored ASCII Effect - Canvas-based for smooth animation
+ * Characters assemble from scattered positions to form the 3D model
  */
 class ColoredAsciiEffect {
   constructor(renderer, charSet = ' .:-=+*#%@', options = {}) {
     const fResolution = options.resolution || 0.15
-    const iScale = options.scale || 1
     const bInvert = options.invert || false
-    const strResolution = options.strResolution || 'low'
     
     // Color palette for depth (dark to bright)
     const colors = options.colors || ['#0d5164', '#c0c2ca', '#ffffff']
@@ -19,68 +16,60 @@ class ColoredAsciiEffect {
     let animationStartTime = 0
     const animationDuration = 2500 // ms
     
+    // Character particles for animation
+    let particles = []
+    let particlesInitialized = false
+    
     let width, height
+    let iWidth, iHeight
 
     const domElement = document.createElement('div')
     domElement.style.cursor = 'default'
 
-    const oAscii = document.createElement('table')
-    domElement.appendChild(oAscii)
-
-    let iWidth, iHeight
-    let oImg
+    // Create canvas for ASCII rendering
+    const asciiCanvas = document.createElement('canvas')
+    asciiCanvas.style.display = 'block'
+    domElement.appendChild(asciiCanvas)
+    const asciiCtx = asciiCanvas.getContext('2d')
 
     this.setSize = function (w, h) {
       width = w
       height = h
       renderer.setSize(w, h)
-      initAsciiSize()
+      
+      iWidth = Math.floor(width * fResolution)
+      iHeight = Math.floor(height * fResolution)
+      
+      oCanvas.width = iWidth
+      oCanvas.height = iHeight
+      
+      asciiCanvas.width = width
+      asciiCanvas.height = height
+      
+      // Reset particles on resize
+      particlesInitialized = false
+      particles = []
     }
 
     this.render = function (scene, camera) {
       renderer.render(scene, camera)
-      asciifyImage(oAscii)
+      renderAscii()
     }
     
-    // Start the scatter animation
     this.startAnimation = function() {
       isAnimating = true
       animationStartTime = performance.now()
       animationProgress = 0
+      particlesInitialized = false
+      particles = []
     }
     
-    // Check if animation is complete
     this.isAnimationComplete = function() {
       return animationProgress >= 1
     }
 
     this.domElement = domElement
 
-    function initAsciiSize() {
-      iWidth = Math.floor(width * fResolution)
-      iHeight = Math.floor(height * fResolution)
-
-      oCanvas.width = iWidth
-      oCanvas.height = iHeight
-
-      oImg = renderer.domElement
-
-      oAscii.cellSpacing = '0'
-      oAscii.cellPadding = '0'
-
-      const oStyle = oAscii.style
-      oStyle.whiteSpace = 'pre'
-      oStyle.margin = '0px'
-      oStyle.padding = '0px'
-      oStyle.letterSpacing = fLetterSpacing + 'px'
-      oStyle.fontFamily = strFont
-      oStyle.fontSize = fFontSize + 'px'
-      oStyle.lineHeight = fLineHeight + 'px'
-      oStyle.textAlign = 'left'
-      oStyle.textDecoration = 'none'
-    }
-
-    const strFont = 'courier new, monospace'
     const oCanvasImg = renderer.domElement
     const oCanvas = document.createElement('canvas')
     
@@ -91,50 +80,23 @@ class ColoredAsciiEffect {
 
     const aCharList = charSet.split('')
 
-    const fFontSize = (2 / fResolution) * iScale
-    const fLineHeight = (2 / fResolution) * iScale
+    // Font settings
+    const fontSize = 10
+    const charWidth = fontSize * 0.6
+    const charHeight = fontSize * 1.2
 
-    let fLetterSpacing = 0
-
-    if (strResolution === 'low') {
-      switch (iScale) {
-        case 1: fLetterSpacing = -1; break
-        case 2:
-        case 3: fLetterSpacing = -2.1; break
-        case 4: fLetterSpacing = -3.1; break
-        case 5: fLetterSpacing = -4.15; break
-      }
-    }
-
-    if (strResolution === 'medium') {
-      switch (iScale) {
-        case 1: fLetterSpacing = 0; break
-        case 2: fLetterSpacing = -1; break
-        case 3: fLetterSpacing = -1.04; break
-        case 4:
-        case 5: fLetterSpacing = -2.1; break
-      }
-    }
-
-    if (strResolution === 'high') {
-      switch (iScale) {
-        case 1:
-        case 2: fLetterSpacing = 0; break
-        case 3:
-        case 4:
-        case 5: fLetterSpacing = -1; break
-      }
-    }
-
-    // Interpolate between colors based on brightness
     function getColorForBrightness(brightness) {
-      if (brightness <= 0.5) {
-        const t = brightness * 2
-        return lerpColor(colors[0], colors[1], t)
-      } else {
-        const t = (brightness - 0.5) * 2
-        return lerpColor(colors[1], colors[2], t)
-      }
+      // Handle any number of colors in the gradient
+      const numColors = colors.length
+      if (numColors === 1) return colors[0]
+      
+      // Map brightness (0-1) to color stops
+      const scaledPos = brightness * (numColors - 1)
+      const lowerIdx = Math.floor(scaledPos)
+      const upperIdx = Math.min(lowerIdx + 1, numColors - 1)
+      const t = scaledPos - lowerIdx
+      
+      return lerpColor(colors[lowerIdx], colors[upperIdx], t)
     }
 
     function lerpColor(color1, color2, t) {
@@ -153,95 +115,162 @@ class ColoredAsciiEffect {
       return `rgb(${r},${g},${b})`
     }
     
-    // Easing function for smooth animation
     function easeOutCubic(t) {
       return 1 - Math.pow(1 - t, 3)
     }
     
-    // Seeded random for consistent random values per character position
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+    }
+    
+    // Seeded random for consistent particle starting positions
     function seededRandom(seed) {
-      const x = Math.sin(seed * 9999) * 10000
+      const x = Math.sin(seed * 12.9898 + seed * 78.233) * 43758.5453
       return x - Math.floor(x)
     }
 
-    function asciifyImage(oAscii) {
+    function initializeParticles(imgData) {
+      particles = []
+      const maxIdx = aCharList.length - 1
+      
+      let idx = 0
+      for (let y = 0; y < iHeight; y++) {
+        for (let x = 0; x < iWidth; x++) {
+          const iOffset = (y * iWidth + x) * 4
+          
+          const iRed = imgData[iOffset]
+          const iGreen = imgData[iOffset + 1]
+          const iBlue = imgData[iOffset + 2]
+          const iAlpha = imgData[iOffset + 3]
+          
+          let fBrightness = (0.3 * iRed + 0.59 * iGreen + 0.11 * iBlue) / 255
+          const isBackground = iAlpha === 0 || fBrightness > 0.95
+          
+          if (iAlpha === 0) fBrightness = 1
+          
+          let iCharIdx = Math.round((1 - fBrightness) * maxIdx)
+          if (bInvert) iCharIdx = maxIdx - iCharIdx
+          
+          const char = aCharList[iCharIdx]
+          
+          // Only create particles for visible characters (not background)
+          if (!isBackground && char && char !== ' ') {
+            // Final position (where it should end up)
+            const finalX = (x / iWidth) * width
+            const finalY = (y / iHeight) * height
+            
+            // Starting position (scattered around the screen)
+            const seed = idx * 0.1
+            const angle = seededRandom(seed) * Math.PI * 2
+            const distance = 300 + seededRandom(seed + 1) * 500
+            const startX = width / 2 + Math.cos(angle) * distance
+            const startY = height / 2 + Math.sin(angle) * distance
+            
+            // Delay based on distance from center (closer = earlier)
+            const dx = finalX - width / 2
+            const dy = finalY - height / 2
+            const distFromCenter = Math.sqrt(dx * dx + dy * dy)
+            const maxDist = Math.sqrt(width * width + height * height) / 2
+            const delay = (distFromCenter / maxDist) * 0.4
+            
+            const colorBrightness = bInvert ? fBrightness : (1 - fBrightness)
+            
+            particles.push({
+              char,
+              startX,
+              startY,
+              finalX,
+              finalY,
+              delay,
+              color: getColorForBrightness(colorBrightness)
+            })
+          }
+          
+          idx++
+        }
+      }
+      
+      particlesInitialized = true
+    }
+
+    function renderAscii() {
       oCtx.clearRect(0, 0, iWidth, iHeight)
       oCtx.drawImage(oCanvasImg, 0, 0, iWidth, iHeight)
       const oImgData = oCtx.getImageData(0, 0, iWidth, iHeight).data
 
       // Update animation progress
-      if (isAnimating) {
+      if (isAnimating && animationProgress < 1) {
         const elapsed = performance.now() - animationStartTime
         animationProgress = Math.min(elapsed / animationDuration, 1)
       }
       
-      const easedProgress = easeOutCubic(animationProgress)
+      // Clear canvas
+      asciiCtx.fillStyle = '#0a0a0a'
+      asciiCtx.fillRect(0, 0, width, height)
+      
+      // Set font
+      asciiCtx.font = `${fontSize}px "Courier New", monospace`
+      asciiCtx.textBaseline = 'top'
 
-      let strChars = ''
-      const maxIdx = aCharList.length - 1
-      let charIndex = 0
-
-      for (let y = 0; y < iHeight; y += 2) {
-        for (let x = 0; x < iWidth; x++) {
-          const iOffset = (y * iWidth + x) * 4
-
-          const iRed = oImgData[iOffset]
-          const iGreen = oImgData[iOffset + 1]
-          const iBlue = oImgData[iOffset + 2]
-          const iAlpha = oImgData[iOffset + 3]
-
-          let fBrightness = (0.3 * iRed + 0.59 * iGreen + 0.11 * iBlue) / 255
-
-          // Check if this is a "visible" character (part of the model, not background)
-          const isVisible = iAlpha > 0 && fBrightness < 0.95
-
-          if (iAlpha === 0) {
-            fBrightness = 1
-          }
-
-          let iCharIdx = Math.round((1 - fBrightness) * maxIdx)
-
-          if (bInvert) {
-            iCharIdx = maxIdx - iCharIdx
-          }
-
-          let strThisChar = aCharList[iCharIdx]
-
-          if (strThisChar === undefined || strThisChar === ' ') {
-            strThisChar = '&nbsp;'
-          }
-
-          const colorBrightness = bInvert ? fBrightness : (1 - fBrightness)
-          const color = getColorForBrightness(colorBrightness)
-
-          // Apply scatter animation only to visible characters
-          if (isAnimating && animationProgress < 1 && isVisible) {
-            // Generate consistent random offset for this character
-            const seed = charIndex * 0.1 + y * 0.01 + x * 0.001
-            const randomX = (seededRandom(seed) - 0.5) * 800
-            const randomY = (seededRandom(seed + 100) - 0.5) * 600
-            const randomRotate = (seededRandom(seed + 200) - 0.5) * 720
-            const randomScale = seededRandom(seed + 300) * 2
-            
-            // Interpolate from scattered to final position
-            const currentX = randomX * (1 - easedProgress)
-            const currentY = randomY * (1 - easedProgress)
-            const currentRotate = randomRotate * (1 - easedProgress)
-            const currentScale = randomScale + (1 - randomScale) * easedProgress
-            const currentOpacity = easedProgress
-            
-            strChars += `<span style="color:${color};display:inline-block;transform:translate(${currentX}px,${currentY}px) rotate(${currentRotate}deg) scale(${currentScale});opacity:${currentOpacity}">${strThisChar}</span>`
-          } else {
-            strChars += `<span style="color:${color}">${strThisChar}</span>`
-          }
-          
-          charIndex++
+      // If animating, use particle system
+      if (isAnimating && animationProgress < 1) {
+        // Initialize particles on first frame of animation
+        if (!particlesInitialized) {
+          initializeParticles(oImgData)
         }
-
-        strChars += '<br/>'
+        
+        // Render particles
+        for (const p of particles) {
+          // Calculate individual particle progress with delay
+          const particleProgress = Math.max(0, Math.min(1, 
+            (animationProgress - p.delay) / (1 - p.delay)
+          ))
+          
+          const easedProgress = easeInOutCubic(particleProgress)
+          
+          // Interpolate position
+          const x = p.startX + (p.finalX - p.startX) * easedProgress
+          const y = p.startY + (p.finalY - p.startY) * easedProgress
+          
+          // Fade in as it approaches final position
+          const alpha = Math.min(1, particleProgress * 2)
+          
+          asciiCtx.fillStyle = p.color.replace('rgb', 'rgba').replace(')', `,${alpha})`)
+          asciiCtx.fillText(p.char, x, y)
+        }
+      } else {
+        // Normal rendering (no animation)
+        const maxIdx = aCharList.length - 1
+        
+        for (let y = 0; y < iHeight; y++) {
+          for (let x = 0; x < iWidth; x++) {
+            const iOffset = (y * iWidth + x) * 4
+            
+            const iRed = oImgData[iOffset]
+            const iGreen = oImgData[iOffset + 1]
+            const iBlue = oImgData[iOffset + 2]
+            const iAlpha = oImgData[iOffset + 3]
+            
+            let fBrightness = (0.3 * iRed + 0.59 * iGreen + 0.11 * iBlue) / 255
+            
+            if (iAlpha === 0) fBrightness = 1
+            
+            let iCharIdx = Math.round((1 - fBrightness) * maxIdx)
+            if (bInvert) iCharIdx = maxIdx - iCharIdx
+            
+            const char = aCharList[iCharIdx]
+            
+            if (char && char !== ' ') {
+              const colorBrightness = bInvert ? fBrightness : (1 - fBrightness)
+              asciiCtx.fillStyle = getColorForBrightness(colorBrightness)
+              
+              const drawX = (x / iWidth) * width
+              const drawY = (y / iHeight) * height
+              asciiCtx.fillText(char, drawX, drawY)
+            }
+          }
+        }
       }
-
-      oAscii.innerHTML = `<tr><td style="display:block;width:${width}px;height:${height}px;overflow:hidden">${strChars}</td></tr>`
     }
   }
 }

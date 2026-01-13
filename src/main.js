@@ -20,22 +20,31 @@ camera.lookAt(0, 0, 0)
 const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 
-// 4. LIGHTING - Creates depth perception through brightness
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3)
+// 4. LIGHTING - Dramatic setup for strong depth perception
+// Low ambient for dark shadows
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.15)
 scene.add(ambientLight)
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2)
-directionalLight.position.set(5, 5, 5)
-scene.add(directionalLight)
+// Strong key light from front-right-top
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.5)
+keyLight.position.set(3, 4, 5)
+scene.add(keyLight)
 
-const backLight = new THREE.DirectionalLight(0xffffff, 0.4)
-backLight.position.set(-3, -2, -5)
-scene.add(backLight)
+// Fill light from left (softer)
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.4)
+fillLight.position.set(-4, 2, 3)
+scene.add(fillLight)
+
+// Rim light from behind to define edges
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.8)
+rimLight.position.set(0, 2, -5)
+scene.add(rimLight)
 
 // 5. ASCII EFFECT with depth colors
-const effect = new ColoredAsciiEffect(renderer, ' .:-=+*#%@', {
+// Character set ordered by visual density (light to heavy)
+const effect = new ColoredAsciiEffect(renderer, ' .\':,;clodxkO0KXNWM@', {
   invert: true,
-  colors: ['#0d5164', '#c0c2ca', '#ffffff'] // blue (far/dark) -> grey -> white (close/bright)
+  colors: ['#0d5164', '#4a8a9c', '#c0c2ca', '#e8e8e8', '#ffffff'] // blue -> teal -> grey -> light -> white
 })
 effect.setSize(window.innerWidth, window.innerHeight)
 effect.domElement.style.backgroundColor = '#0a0a0a'
@@ -43,6 +52,7 @@ document.body.appendChild(effect.domElement)
 
 // 6. LOAD 3D MODEL
 let model = null
+let modelGroup = null
 let canSpin = false
 const loader = new STLLoader()
 
@@ -69,9 +79,16 @@ loader.load('/sai-prueba-pagina.stl', (geometry) => {
   const scale = 3 / maxDim
   model.scale.setScalar(scale)
   
+  // Rotate 90 degrees on X axis
+  model.rotation.x = -Math.PI / 2
+  
+  // Wrap in group for clean Y-axis spinning
+  modelGroup = new THREE.Group()
+  modelGroup.add(model)
+  
   console.log('Model loaded! Size:', size, 'Scale applied:', scale)
   
-  scene.add(model)
+  scene.add(modelGroup)
   
   // Start the scatter-to-form animation
   effect.startAnimation()
@@ -79,14 +96,22 @@ loader.load('/sai-prueba-pagina.stl', (geometry) => {
   // Start spinning after animation completes (2.5s animation + small buffer)
   setTimeout(() => {
     canSpin = true
-  }, 2800)
+  }, 2700)
 })
 
 // 7. ANIMATION LOOP
+let time = 0
 function animate() {
-  // Spin the model after fade-in completes
-  if (model && canSpin) {
-    model.rotation.y += 0.008
+  // Showcase animation after assembly completes
+  if (modelGroup && canSpin) {
+    time += 0.015
+    
+    // Continuous Y rotation to show all sides
+    modelGroup.rotation.y += 0.006
+    
+    // Gentle oscillating tilt to show depth (not full spin)
+    modelGroup.rotation.x = Math.sin(time * 0.5) * 0.15  // ±8.5° tilt
+    modelGroup.rotation.z = Math.sin(time * 0.3) * 0.08  // ±4.5° roll
   }
   
   effect.render(scene, camera)
