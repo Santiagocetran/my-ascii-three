@@ -57,7 +57,7 @@ After publishing and installing the package, here's how to integrate it into you
   </div>
 
   <script type="module">
-    import { startModelAnimation } from '@your-username/ascii-3d-animation'
+    import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
     const controller = startModelAnimation({
       container: document.getElementById('animation-bg'),
@@ -76,7 +76,7 @@ After publishing and installing the package, here's how to integrate it into you
 
 ```jsx
 import { useEffect, useRef } from 'react'
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 export function AnimatedBackground() {
   const containerRef = useRef(null)
@@ -149,10 +149,13 @@ function App() {
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 const animationContainer = ref(null)
 let controller = null
+const handleResize = () => {
+  controller?.resize()
+}
 
 onMounted(() => {
   controller = startModelAnimation({
@@ -160,9 +163,6 @@ onMounted(() => {
     modelUrl: '/models/your-model.stl'
   })
 
-  const handleResize = () => {
-    controller?.resize()
-  }
   window.addEventListener('resize', handleResize)
 })
 

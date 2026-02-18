@@ -47,13 +47,15 @@ Edit `package.json` and update:
 
 ```json
 {
-  "name": "@your-npm-username/ascii-3d-animation",
-  "author": "Your Name <email@example.com>",
+  "name": "@santiagocetran/ascii-3d-animation",
+  "author": "santiagocetran <santiagorcetran236@gmail.com>",
   "repository": {
-    "url": "https://github.com/your-username/my-ascii-three.git"
+    "url": "https://github.com/Santiagocetran/my-ascii-three.git"
   }
 }
 ```
+
+When you are ready to publish, set `"private": false` in `package.json`.
 
 ### 2. Test Locally
 
@@ -85,13 +87,13 @@ npm publish --access public
 After publishing, install in any project:
 
 ```bash
-npm install @your-username/ascii-3d-animation
+npm install @santiagocetran/ascii-3d-animation
 ```
 
 Then import and use:
 
 ```javascript
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 startModelAnimation({
   container: document.getElementById('hero'),
@@ -167,7 +169,7 @@ Follow [Semantic Versioning](https://semver.org/):
 
 1. Build the library: `npm run build:lib`
 2. Link locally: `npm link`
-3. In test project: `npm link @your-username/ascii-3d-animation`
+3. In test project: `npm link @santiagocetran/ascii-3d-animation`
 4. Test it works correctly
 5. Unlink: `npm unlink`
 

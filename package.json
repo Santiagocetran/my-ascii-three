@@ -1,17 +1,18 @@
 {
-  "name": "@your-username/ascii-3d-animation",
+  "name": "@santiagocetran/ascii-3d-animation",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "description": "A beautiful ASCII/bitmap effect for rendering 3D models with Three.js",
-  "main": "./dist/ascii-3d-animation.js",
-  "module": "./dist/ascii-3d-animation.js",
+  "main": "./lib/ascii-3d-animation.js",
+  "module": "./lib/ascii-3d-animation.js",
   "exports": {
     ".": {
-      "import": "./dist/ascii-3d-animation.js"
+      "import": "./lib/ascii-3d-animation.js"
     }
   },
   "files": [
-    "dist",
+    "lib",
     "README.md"
   ],
   "scripts": {
@@ -29,11 +30,11 @@
     "webgl",
     "effect"
   ],
-  "author": "Your Name",
+  "author": "santiagocetran <santiagorcetran236@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/my-ascii-three.git"
+    "url": "https://github.com/Santiagocetran/my-ascii-three.git"
   },
   "peerDependencies": {
     "three": ">=0.150.0"

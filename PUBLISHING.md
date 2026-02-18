@@ -10,7 +10,7 @@ Edit `package.json` and change the package name:
 
 ```json
 {
-  "name": "@your-npm-username/ascii-3d-animation",
+  "name": "@santiagocetran/ascii-3d-animation",
   // or without scope:
   "name": "ascii-3d-animation"
 }
@@ -28,7 +28,7 @@ Edit the repository field in `package.json`:
 {
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-github-username/my-ascii-three.git"
+    "url": "https://github.com/Santiagocetran/my-ascii-three.git"
   }
 }
 ```
@@ -39,9 +39,11 @@ Edit the author field in `package.json`:
 
 ```json
 {
-  "author": "Your Name <your.email@example.com>"
+  "author": "santiagocetran <santiagorcetran236@gmail.com>"
 }
 ```
+
+Before publishing, make sure `"private": false` in `package.json`.
 
 ## Publishing Steps
 
@@ -84,7 +86,7 @@ npm publish
 ### 5. Verify
 
 Check your package page:
-- https://www.npmjs.com/package/@your-username/ascii-3d-animation
+- https://www.npmjs.com/package/@santiagocetran/ascii-3d-animation
 
 ## Updating the Package
 
@@ -113,13 +115,13 @@ npm publish --access public
 After publishing, install in your website:
 
 ```bash
-npm install @your-username/ascii-3d-animation
+npm install @santiagocetran/ascii-3d-animation
 ```
 
 Then import and use:
 
 ```javascript
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 startModelAnimation({
   container: document.getElementById('animation'),
@@ -133,12 +135,12 @@ When you publish a new version:
 
 1. In your website project, update the package:
    ```bash
-   npm update @your-username/ascii-3d-animation
+   npm update @santiagocetran/ascii-3d-animation
    ```
 
 2. Or install a specific version:
    ```bash
-   npm install @your-username/ascii-3d-animation@1.2.0
+   npm install @santiagocetran/ascii-3d-animation@1.2.0
    ```
 
 ## Tips

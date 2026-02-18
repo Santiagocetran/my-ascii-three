@@ -3,6 +3,8 @@ import { resolve } from 'path'
 
 export default defineConfig({
   build: {
+    outDir: 'lib',
+    copyPublicDir: false,
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
       name: 'Ascii3DAnimation',

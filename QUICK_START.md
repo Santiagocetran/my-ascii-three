@@ -5,7 +5,7 @@
 ### 1. Update Package Name
 Edit `package.json`:
 ```json
-"name": "@your-npm-username/ascii-3d-animation"
+"name": "@santiagocetran/ascii-3d-animation"
 ```
 
 ### 2. Build & Publish
@@ -15,8 +15,10 @@ npm login
 npm publish --access public
 ```
 
+If `package.json` has `"private": true`, change it to `false` before publishing.
+
 ### 3. Done!
-Your package is live at: `https://npmjs.com/package/@your-username/ascii-3d-animation`
+Your package is live at: `https://npmjs.com/package/@santiagocetran/ascii-3d-animation`
 
 ---
 
@@ -24,12 +26,12 @@ Your package is live at: `https://npmjs.com/package/@your-username/ascii-3d-anim
 
 ### Install
 ```bash
-npm install @your-username/ascii-3d-animation three
+npm install @santiagocetran/ascii-3d-animation three
 ```
 
 ### Use
 ```javascript
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 startModelAnimation({
   container: document.getElementById('hero'),
@@ -52,7 +54,7 @@ npm publish --access public
 
 ### Update in Your Website
 ```bash
-npm update @your-username/ascii-3d-animation
+npm update @santiagocetran/ascii-3d-animation
 ```
 
 ---

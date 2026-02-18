@@ -14,13 +14,13 @@ A beautiful bitmap/ASCII effect for rendering animated 3D models with Three.js. 
 ## Installation
 
 ```bash
-npm install @your-username/ascii-3d-animation three
+npm install @santiagocetran/ascii-3d-animation three
 ```
 
 ## Quick Start
 
 ```javascript
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 // Start the animation
 const controller = startModelAnimation({
@@ -80,7 +80,7 @@ An object with methods:
 ### Basic Usage with Transparent Background
 
 ```javascript
-import { startModelAnimation } from '@your-username/ascii-3d-animation'
+import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
 startModelAnimation({
   container: document.getElementById('hero'),
