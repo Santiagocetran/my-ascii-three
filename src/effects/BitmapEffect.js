@@ -263,8 +263,12 @@ class BitmapEffect {
         animationProgress = 1
       }
 
-      bitmapCtx.fillStyle = backgroundColor
-      bitmapCtx.fillRect(0, 0, width, height)
+      if (backgroundColor !== 'transparent') {
+        bitmapCtx.fillStyle = backgroundColor
+        bitmapCtx.fillRect(0, 0, width, height)
+      } else {
+        bitmapCtx.clearRect(0, 0, width, height)
+      }
 
       if (isAnimating) {
         if (!particlesInitialized) {

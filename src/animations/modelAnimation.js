@@ -6,7 +6,7 @@ const DEFAULT_EFFECT_OPTIONS = {
   pixelSize: 3,
   ditherType: 'bayer4x4',
   colors: ['#021a15', '#053a2a', '#074434', '#0a5845', '#1a7a5e', '#4d9977', '#ABC685', '#E8FF99', '#F7F9CE', '#FFF6E7'],
-  backgroundColor: '#0a0a0a',
+  backgroundColor: 'transparent',
   invert: false
 }
 
@@ -34,7 +34,12 @@ export function startModelAnimation({
     minBrightness: 0.05,
     ...effectOptions
   }
-  scene.background = new THREE.Color(mergedEffectOptions.backgroundColor)
+  // Only set scene background if not transparent
+  if (mergedEffectOptions.backgroundColor !== 'transparent') {
+    scene.background = new THREE.Color(mergedEffectOptions.backgroundColor)
+  } else {
+    scene.background = null
+  }
   const effect = new BitmapEffect(renderer, mergedEffectOptions)
   effect.setSize(window.innerWidth, window.innerHeight)
   effect.domElement.style.backgroundColor = mergedEffectOptions.backgroundColor
