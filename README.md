@@ -1,180 +1,130 @@
 # ASCII 3D Animation
 
-A beautiful bitmap/ASCII effect for rendering animated 3D models with Three.js. Perfect for adding retro, artistic visualizations to your website.
+Render STL models as animated bitmap/dithered art with Three.js.
 
-## Features
+The package is designed for website overlays with transparent backgrounds, container-based sizing, and a React wrapper for Next.js.
 
-- 🎨 **Customizable color palettes** - Use any colors you want
-- 📦 **Transparent backgrounds** - Seamlessly integrate into any website
-- ✨ **Smooth particle animations** - Fade in/out with scatter effects
-- 🎯 **High resolution** - Adjustable pixel size for detail
-- 🔄 **Automatic rotation** - Built-in 3D model animation
-- 🚀 **Easy to use** - Simple API, works with any Three.js setup
-
-## Installation
+## Install
 
 ```bash
 npm install @santiagocetran/ascii-3d-animation three
 ```
 
-## Quick Start
+If you use the React wrapper, also install:
 
-```javascript
+```bash
+npm install react react-dom
+```
+
+## Core API (vanilla JS)
+
+```js
 import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
 
-// Start the animation
+const container = document.getElementById('animation')
+
 const controller = startModelAnimation({
-  container: document.getElementById('animation-container'),
-  modelUrl: '/path/to/your-model.stl',
+  container,
+  modelUrl: '/models/router.stl',
+  showPhaseDuration: 20000,
   effectOptions: {
-    // Optional: customize the effect
     pixelSize: 3,
+    ditherType: 'bayer4x4',
     colors: ['#021a15', '#053a2a', '#074434', '#ABC685', '#E8FF99'],
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
+    animationDuration: 2500
   }
 })
 
-// Handle window resize
-window.addEventListener('resize', () => {
-  controller.resize()
-})
+window.addEventListener('resize', () => controller.resize())
 
-// Clean up when needed
+// Later:
 // controller.dispose()
 ```
 
-## API
+## React / Next.js (`./react` subpath)
 
-### `startModelAnimation(options)`
+### App Router (recommended)
 
-Creates and starts a 3D model animation with bitmap effects.
+Create a client component:
 
-#### Options
+```tsx
+'use client'
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `container` | HTMLElement | `document.body` | Container element for the animation |
-| `modelUrl` | string | `'/sai-prueba-pagina.stl'` | Path to your STL model file |
-| `effectOptions` | object | See below | Customize the visual effect |
+import dynamic from 'next/dynamic'
 
-#### Effect Options
+const AsciiAnimation = dynamic(
+  () => import('@santiagocetran/ascii-3d-animation/react').then((m) => m.AsciiAnimation),
+  { ssr: false }
+)
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `pixelSize` | number | `3` | Size of each pixel/block (smaller = more detail) |
-| `ditherType` | string | `'bayer4x4'` | Dithering algorithm: `'bayer4x4'`, `'bayer8x8'`, or `'variableDot'` |
-| `colors` | array | Green gradient | Array of hex colors for the gradient (dark to light) |
-| `backgroundColor` | string | `'transparent'` | Background color (use `'transparent'` for overlay) |
-| `invert` | boolean | `false` | Invert brightness mapping |
-| `minBrightness` | number | `0.05` | Minimum brightness threshold |
-
-#### Returns
-
-An object with methods:
-
-- `resize(width?, height?)` - Update canvas size (defaults to window size)
-- `dispose()` - Clean up and remove the animation
-
-## Examples
-
-### Basic Usage with Transparent Background
-
-```javascript
-import { startModelAnimation } from '@santiagocetran/ascii-3d-animation'
-
-startModelAnimation({
-  container: document.getElementById('hero'),
-  modelUrl: '/models/router.stl'
-})
-```
-
-### Custom Colors and Resolution
-
-```javascript
-startModelAnimation({
-  container: document.getElementById('hero'),
-  modelUrl: '/models/router.stl',
-  effectOptions: {
-    pixelSize: 2, // Higher resolution
-    colors: ['#000000', '#1a1a2e', '#16213e', '#0f3460', '#533483'],
-    backgroundColor: '#0a0a0a'
-  }
-})
-```
-
-### Retro Monochrome Style
-
-```javascript
-startModelAnimation({
-  container: document.getElementById('hero'),
-  modelUrl: '/models/router.stl',
-  effectOptions: {
-    pixelSize: 4,
-    ditherType: 'bayer8x8',
-    colors: ['#000000', '#00ff00'],
-    backgroundColor: 'transparent'
-  }
-})
-```
-
-## Animation Behavior
-
-The animation has three phases:
-
-1. **Fade In** (2.5s) - Particles scatter in from random positions
-2. **Show** (20s) - Model rotates and displays normally
-3. **Fade Out** (2.5s) - Particles scatter out
-4. Loops back to Fade In
-
-## CSS Styling
-
-The animation canvas fills its container. Style the container to position it:
-
-```css
-#animation-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1; /* Behind content */
-  pointer-events: none; /* Allow clicks through */
+export function HeroAnimation() {
+  return (
+    <AsciiAnimation
+      modelUrl="/models/router.stl"
+      className="w-full h-[420px]"
+      effectOptions={{
+        backgroundColor: 'transparent',
+        pixelSize: 3
+      }}
+    />
+  )
 }
 ```
 
-## Browser Support
+## API Reference
 
-Works in all modern browsers that support:
-- ES6 modules
-- Canvas API
-- WebGL
+### `startModelAnimation(options)`
 
-## Model Format
+Options:
 
-Currently supports **STL files**. Your 3D model will be:
-- Automatically centered
-- Scaled to fit the viewport
-- Rotated for optimal viewing
+| Option | Type | Required | Default | Notes |
+| --- | --- | --- | --- | --- |
+| `container` | `HTMLElement` | no | `document.body` | Used after browser guard |
+| `modelUrl` | `string` | yes | - | STL URL/path |
+| `effectOptions` | `object` | no | see below | Bitmap rendering options |
+| `showPhaseDuration` | `number` | no | `20000` | Show phase duration in ms |
+
+Effect options:
+
+| Option | Type | Default |
+| --- | --- | --- |
+| `pixelSize` | `number` | `3` |
+| `ditherType` | `'bayer4x4' \| 'bayer8x8' \| 'variableDot'` | `'bayer4x4'` |
+| `colors` | `string[]` | green gradient |
+| `backgroundColor` | `string` | `'transparent'` |
+| `invert` | `boolean` | `false` |
+| `minBrightness` | `number` | `0.05` |
+| `animationDuration` | `number` | `2500` |
+
+Returns:
+
+- `resize(width?, height?)`: resizes to provided dimensions, or re-measures the container if omitted.
+- `dispose()`: stops animation loop, disposes WebGL/material resources, removes DOM element.
+
+## Notes
+
+- Requires a browser environment. Calling `startModelAnimation` on the server throws a descriptive error.
+- The renderer uses alpha and transparent clear color for real transparency.
+- STL loading errors are logged with the failing URL.
 
 ## Development
 
-To modify and test locally:
-
 ```bash
-# Install dependencies
 npm install
-
-# Run dev server
 npm run dev
-
-# Build the library
 npm run build:lib
 ```
+
+Library output is generated in `lib/`.
+
+## Publish Checklist
+
+1. Set `"private": false` in `package.json`.
+2. Run `npm run build:lib`.
+3. Optional sanity check: `npm pack --dry-run`.
+4. Publish: `npm publish --access public`.
 
 ## License
 
 MIT
-
-## Credits
-
-Built with [Three.js](https://threejs.org/)

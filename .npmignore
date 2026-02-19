@@ -21,5 +21,5 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Only include the built dist folder
-!dist/
+# Only include the built lib folder
+!lib/

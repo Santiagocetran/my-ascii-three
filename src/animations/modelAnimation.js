@@ -11,22 +11,40 @@ const DEFAULT_EFFECT_OPTIONS = {
 }
 
 export function startModelAnimation({
-  container = document.body,
-  modelUrl = '/sai-prueba-pagina.stl',
-  effectOptions = {}
+  container,
+  modelUrl,
+  effectOptions = {},
+  showPhaseDuration = 20000
 } = {}) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('startModelAnimation requires a browser environment')
+  }
+  if (!modelUrl) {
+    throw new Error('modelUrl is required')
+  }
+
+  const el = container ?? document.body
   const scene = new THREE.Scene()
+
+  function getContainerSize() {
+    const width = Math.max(1, el.clientWidth || window.innerWidth || 1)
+    const height = Math.max(1, el.clientHeight || window.innerHeight || 1)
+    return { width, height }
+  }
+
+  const initialSize = getContainerSize()
 
   const camera = new THREE.PerspectiveCamera(
     75,
-    window.innerWidth / window.innerHeight,
+    initialSize.width / initialSize.height,
     0.1,
     1000
   )
   camera.position.set(0, 0.5, 5)
   camera.lookAt(0, 0, 0)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true })
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+  renderer.setClearColor(0x000000, 0)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
   const mergedEffectOptions = {
@@ -41,9 +59,9 @@ export function startModelAnimation({
     scene.background = null
   }
   const effect = new BitmapEffect(renderer, mergedEffectOptions)
-  effect.setSize(window.innerWidth, window.innerHeight)
+  effect.setSize(initialSize.width, initialSize.height)
   effect.domElement.style.backgroundColor = mergedEffectOptions.backgroundColor
-  container.appendChild(effect.domElement)
+  el.appendChild(effect.domElement)
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.15)
   scene.add(ambientLight)
@@ -61,9 +79,14 @@ export function startModelAnimation({
   scene.add(rimLight)
 
   let modelGroup = null
+  let disposed = false
   const loader = new STLLoader()
 
   loader.load(modelUrl, (geometry) => {
+    if (disposed) {
+      geometry.dispose()
+      return
+    }
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       roughness: 0.5,
@@ -87,13 +110,15 @@ export function startModelAnimation({
     scene.add(modelGroup)
 
     effect.startAnimation('fadeIn')
+  }, undefined, (err) => {
+    console.error(`Failed to load model: ${modelUrl}`, err)
   })
 
   let time = 0
   let showPhaseStartTime = 0
-  const showPhaseDuration = 20000
 
   function animate() {
+    if (disposed) return
     const currentPhase = effect.getAnimationPhase()
     const now = performance.now()
 
@@ -120,14 +145,42 @@ export function startModelAnimation({
 
   renderer.setAnimationLoop(animate)
 
-  function resize(width = window.innerWidth, height = window.innerHeight) {
-    camera.aspect = width / height
+  function resize(width, height) {
+    const size = width && height
+      ? { width: Math.max(1, width), height: Math.max(1, height) }
+      : getContainerSize()
+    camera.aspect = size.width / size.height
     camera.updateProjectionMatrix()
-    effect.setSize(width, height)
+    effect.setSize(size.width, size.height)
+  }
+
+  function disposeMaterial(material) {
+    if (!material || typeof material !== 'object') return
+    for (const value of Object.values(material)) {
+      if (value && typeof value === 'object' && typeof value.dispose === 'function') {
+        value.dispose()
+      }
+    }
+    material.dispose()
   }
 
   function dispose() {
+    disposed = true
     renderer.setAnimationLoop(null)
+
+    scene.traverse((obj) => {
+      if (obj.geometry && typeof obj.geometry.dispose === 'function') {
+        obj.geometry.dispose()
+      }
+      if (obj.material) {
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach(disposeMaterial)
+        } else {
+          disposeMaterial(obj.material)
+        }
+      }
+    })
+
     renderer.dispose()
     if (effect.domElement.parentNode) {
       effect.domElement.parentNode.removeChild(effect.domElement)

@@ -35,7 +35,8 @@ class BitmapEffect {
 
     const oCanvasImg = renderer.domElement
     const oCanvas = document.createElement('canvas')
-    const oCtx = oCanvas.getContext('2d')
+    // Frequent getImageData readbacks are faster with this hint.
+    const oCtx = oCanvas.getContext('2d', { willReadFrequently: true })
 
     const bayer4x4 = [
       [0, 8, 2, 10],
